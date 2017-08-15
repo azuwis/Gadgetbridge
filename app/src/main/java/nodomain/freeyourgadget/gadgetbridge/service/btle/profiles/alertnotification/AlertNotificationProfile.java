@@ -58,34 +58,52 @@ public class AlertNotificationProfile<T extends AbstractBTLEDeviceSupport> exten
     }
 
     public void newAlert(TransactionBuilder builder, NewAlert alert, OverflowStrategy strategy) {
+        newAlert(builder, alert, strategy, 0, -1);
+    }
+
+    public void newAlert(TransactionBuilder builder, NewAlert alert, OverflowStrategy strategy, int delay, int count) {
         BluetoothGattCharacteristic characteristic = getCharacteristic(GattCharacteristic.UUID_CHARACTERISTIC_NEW_ALERT);
         if (characteristic != null) {
             String message = StringUtils.ensureNotNull(alert.getMessage());
-            if (message.length() > maxLength && strategy == OverflowStrategy.TRUNCATE) {
-                message = StringUtils.truncate(message, maxLength);
-            }
-
-            int numChunks = message.length() / maxLength;
-            if (message.length() % maxLength > 0) {
-                numChunks++;
-            }
-
             try {
-                boolean hasAlerted = false;
-                for (int i = 0; i < numChunks; i++) {
-                    int offset = i * maxLength;
-                    int restLength = message.length() - offset;
-                    message = message.substring(offset, offset + Math.min(maxLength, restLength));
-                    if (hasAlerted && message.length() == 0) {
-                        // no need to do it again when there is no text content
-                        break;
+                StringBuilder messagePart = new StringBuilder(maxLength);
+                int numNotified = 0;
+                int messagePartBytes = 0;
+                for (int i = 0; i < message.length(); i++) {
+                    char c = message.charAt(i);
+                    int charlen = 0;
+                    if (c <= 0x7f) {
+                        charlen = 1;
+                    } else if (c <= 0x7ff) {
+                        charlen = 2;
+                    } else if (c <= 0xd7ff) {
+                        charlen = 3;
+                    } else if (c <= 0xdbff) {
+                        charlen = 4;
+                    } else if (c <= 0xdfff) {
+                        charlen = 0;
+                    } else if (c <= 0xffff) {
+                        charlen = 3;
                     }
-                    builder.write(characteristic, getAlertMessage(alert, message, 1));
-                    hasAlerted = true;
+                    if (messagePartBytes + charlen > maxLength) {
+                        numNotified++;
+                        builder.write(characteristic, getAlertMessage(alert, messagePart.toString(), 1));
+                        if (delay > 0) {
+                            builder.wait(delay);
+                        }
+                        messagePart.delete(0, messagePart.length());
+                        messagePartBytes = 0;
+                        if (strategy == OverflowStrategy.TRUNCATE && numNotified == 1) {
+                            return;
+                        }
+                        if (count > 0 && numNotified == count) {
+                            return;
+                        }
+                    }
+                    messagePart.append(c);
+                    messagePartBytes += charlen;
                 }
-                if (!hasAlerted) {
-                    builder.write(characteristic, getAlertMessage(alert, "", 1));
-                }
+                builder.write(characteristic, getAlertMessage(alert, messagePart.toString(), 1));
             } catch (IOException ex) {
                 // ain't gonna happen
                 LOG.error("Error writing alert message to ByteArrayOutputStream");
