@@ -433,7 +433,7 @@
             <EditTextPreference
                 android:defaultValue="3"
                 android:inputType="number"
-                android:key="mi_vibration_count_alarm_clock"
+                android:key="mi_vibration_count_generic_alarm_clock"
                 android:maxLength="2"
                 android:title="@string/pref_title_notifications_repetitions" />
             <Preference
