@@ -56,7 +56,7 @@ public class NotificationUtils {
             case WECHAT:
                 return StringUtils.ensureNotNull(notificationSpec.body);
         }
-        return "";
+        return StringUtils.ensureNotNull(notificationSpec.body);
     }
 
     @NonNull
