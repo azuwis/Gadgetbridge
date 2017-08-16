@@ -82,6 +82,6 @@ public class Mi2TextNotificationStrategy extends Mi2NotificationStrategy {
             category = simpleNotification.getAlertCategory();
         }
         NewAlert alert = new NewAlert(category, 1, simpleNotification.getMessage());
-        profile.newAlert(builder, alert, OverflowStrategy.MAKE_MULTIPLE);
+        profile.newAlert(builder, alert, OverflowStrategy.MAKE_MULTIPLE, 6000, 2);
     }
 }
