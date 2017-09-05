@@ -83,6 +83,9 @@ public class AmazfitBipSupport extends MiBand2Support {
         String senderOrTiltle = StringUtils.getFirstOf(notificationSpec.sender, notificationSpec.title);
 
         String message = StringUtils.truncate(senderOrTiltle, 32) + "\0";
+        if (notificationSpec.sourceName != null) {
+            message += notificationSpec.sourceName + ": ";
+        }
         if (notificationSpec.subject != null) {
             message += StringUtils.truncate(notificationSpec.subject, 128) + "\n\n";
         }
