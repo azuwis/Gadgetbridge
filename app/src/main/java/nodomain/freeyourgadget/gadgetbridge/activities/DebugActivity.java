@@ -115,6 +115,7 @@ public class DebugActivity extends AbstractGBActivity {
                 notificationSpec.body = testString;
                 notificationSpec.sender = testString;
                 notificationSpec.subject = testString;
+                notificationSpec.sourceName = testString;
                 notificationSpec.type = NotificationType.values()[sendTypeSpinner.getSelectedItemPosition()];
                 notificationSpec.pebbleColor = notificationSpec.type.color;
                 notificationSpec.id = -1;
