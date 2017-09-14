@@ -636,6 +636,10 @@ public class MiBand2Support extends AbstractBTLEDeviceSupport {
             alertLevel = MiBand2Service.ALERT_LEVEL_VIBRATE_ONLY;
         }
         String message = NotificationUtils.getPreferredTextFor(notificationSpec, 40, 40, getContext()).trim();
+        String sourceName = notificationSpec.sourceName;
+        if (sourceName != null) {
+            message = sourceName + ": " + message;
+        }
         String origin = notificationSpec.type.getGenericType();
         SimpleNotification simpleNotification = new SimpleNotification(message, BLETypeConversions.toAlertCategory(notificationSpec.type), notificationSpec.type);
         performPreferredNotification(origin + " received", origin, simpleNotification, alertLevel, null);
