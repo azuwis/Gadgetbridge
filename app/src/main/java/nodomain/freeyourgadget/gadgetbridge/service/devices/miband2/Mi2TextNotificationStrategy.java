@@ -49,10 +49,12 @@ public class Mi2TextNotificationStrategy extends Mi2NotificationStrategy {
         }
 
         // announce text messages with configured alerts first
-        super.sendCustomNotification(vibrationProfile, simpleNotification, extraAction, builder);
+        //super.sendCustomNotification(vibrationProfile, simpleNotification, extraAction, builder);
         // and finally send the text message, if any
         if (simpleNotification != null && !StringUtils.isEmpty(simpleNotification.getMessage())) {
             sendAlert(simpleNotification, builder);
+        } else {
+            super.sendCustomNotification(vibrationProfile, simpleNotification, extraAction, builder);
         }
     }
 
