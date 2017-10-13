@@ -78,6 +78,9 @@ public class LanguageUtils {
             // Polish
             put('Ł', "L"); put('ł', "l");
 
+            // weather
+            put('☀', "°C "); put('☔', "°C "); put('⛄', "°C "); put('❄', "°C "); put('㎜', "mm "); put('⇶', "m/s");
+
             //TODO: these must be configurable. If someone wants to transliterate cyrillic it does not mean his device has no German umlauts
             //all or nothing is really bad here
         }
