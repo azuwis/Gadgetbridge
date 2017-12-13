@@ -22,6 +22,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import nodomain.freeyourgadget.gadgetbridge.BuildConfig;
 import nodomain.freeyourgadget.gadgetbridge.GBApplication;
 import nodomain.freeyourgadget.gadgetbridge.model.Weather;
 import nodomain.freeyourgadget.gadgetbridge.model.WeatherSpec;
+import nodomain.freeyourgadget.gadgetbridge.service.devices.pebble.webview.CurrentPosition;
 import nodomain.freeyourgadget.gadgetbridge.util.Prefs;
 
 import static cyanogenmod.providers.WeatherContract.WeatherColumns.TempUnit.FAHRENHEIT;
@@ -53,6 +55,7 @@ public class CMWeatherReceiver extends BroadcastReceiver implements CMWeatherMan
     private static final Logger LOG = LoggerFactory.getLogger(CMWeatherReceiver.class);
 
     private WeatherLocation weatherLocation = null;
+    private Location location = null;
     private Context mContext;
     private PendingIntent mPendingIntent = null;
 
@@ -68,7 +71,11 @@ public class CMWeatherReceiver extends BroadcastReceiver implements CMWeatherMan
         String city = prefs.getString("weather_city", null);
         String cityId = prefs.getString("weather_cityid", null);
 
-        if ((cityId == null || cityId.equals("")) && city != null && !city.equals("")) {
+        if (city != null && city.equalsIgnoreCase("auto")) {
+            CurrentPosition currentPosition = new CurrentPosition();
+            location = currentPosition.getLastKnownLocation();
+            enablePeriodicAlarm(true);
+        } else if ((cityId == null || cityId.equals("")) && city != null && !city.equals("")) {
             lookupCity(city);
         } else if (city != null && cityId != null) {
             weatherLocation = new WeatherLocation.Builder(cityId, city).build();
@@ -118,7 +125,7 @@ public class CMWeatherReceiver extends BroadcastReceiver implements CMWeatherMan
         String city = prefs.getString("weather_city", null);
         String cityId = prefs.getString("weather_cityid", null);
 
-        if (city != null && !city.equals("") && cityId == null) {
+        if (city != null && !city.equals("") && !city.equalsIgnoreCase("auto") && cityId == null) {
             lookupCity(city);
         } else {
             requestWeather();
@@ -127,8 +134,12 @@ public class CMWeatherReceiver extends BroadcastReceiver implements CMWeatherMan
 
     private void requestWeather() {
         final CMWeatherManager weatherManager = CMWeatherManager.getInstance(GBApplication.getContext());
-        if (weatherManager.getActiveWeatherServiceProviderLabel() != null && weatherLocation != null) {
-            weatherManager.requestWeatherUpdate(weatherLocation, this);
+        if (weatherManager.getActiveWeatherServiceProviderLabel() != null) {
+            if (location != null) {
+                weatherManager.requestWeatherUpdate(location, this);
+            } else if (weatherLocation != null) {
+                weatherManager.requestWeatherUpdate(weatherLocation, this);
+            }
         }
     }
 
