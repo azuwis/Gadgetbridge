@@ -616,12 +616,12 @@ public class HuamiSupport extends AbstractBTLEDeviceSupport {
 
         String senderOrTitle = StringUtils.getFirstOf(notificationSpec.sender, notificationSpec.title);
 
-        String message = StringUtils.truncate(senderOrTitle, 32) + "\0";
+        String message = StringUtils.utf8truncate(senderOrTitle, 31) + "\0";
         if (notificationSpec.subject != null) {
-            message += StringUtils.truncate(notificationSpec.subject, 128) + "\n\n";
+            message += StringUtils.utf8truncate(notificationSpec.subject, 94) + "\n\n";
         }
         if (notificationSpec.body != null) {
-            message += StringUtils.truncate(notificationSpec.body, 128);
+            message += StringUtils.utf8truncate(notificationSpec.body, 384);
         }
 
         try {
@@ -639,7 +639,7 @@ public class HuamiSupport extends AbstractBTLEDeviceSupport {
                 alertCategory = AlertCategory.Email;
             }
 
-            int maxLength = 230;
+            int maxLength = 512;
             if (characteristicChunked != null) {
                 int prefixlength = 2;
 
