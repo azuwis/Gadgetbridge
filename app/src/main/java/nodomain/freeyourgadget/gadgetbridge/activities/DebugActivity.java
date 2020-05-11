@@ -135,8 +135,8 @@ public class DebugActivity extends AbstractGBActivity {
                 String testString = editContent.getText().toString();
                 notificationSpec.phoneNumber = testString;
                 notificationSpec.body = testString;
-                notificationSpec.sender = testString;
-                notificationSpec.subject = testString;
+                notificationSpec.sender = "Test";
+                notificationSpec.subject = null;
                 notificationSpec.type = NotificationType.values()[sendTypeSpinner.getSelectedItemPosition()];
                 notificationSpec.pebbleColor = notificationSpec.type.color;
                 GBApplication.deviceService().onNotification(notificationSpec);
