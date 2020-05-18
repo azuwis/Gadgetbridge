@@ -20,11 +20,16 @@ package nodomain.freeyourgadget.gadgetbridge.service.devices.huami;
 
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.media.MediaMetadata;
+import android.media.session.MediaController;
+import android.media.session.MediaSessionManager;
+import android.media.session.PlaybackState;
 import android.net.Uri;
 import android.widget.Toast;
 
@@ -92,6 +97,7 @@ import nodomain.freeyourgadget.gadgetbridge.entities.DaoSession;
 import nodomain.freeyourgadget.gadgetbridge.entities.Device;
 import nodomain.freeyourgadget.gadgetbridge.entities.MiBandActivitySample;
 import nodomain.freeyourgadget.gadgetbridge.entities.User;
+import nodomain.freeyourgadget.gadgetbridge.externalevents.NotificationListener;
 import nodomain.freeyourgadget.gadgetbridge.impl.GBDevice.State;
 import nodomain.freeyourgadget.gadgetbridge.model.ActivitySample;
 import nodomain.freeyourgadget.gadgetbridge.model.ActivityUser;
@@ -856,6 +862,64 @@ public class HuamiSupport extends AbstractBTLEDeviceSupport {
         }
     }
 
+    private void getMusicInfo() {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            if (bufferMusicSpec == null) {
+                bufferMusicSpec = new MusicSpec();
+            }
+            if (bufferMusicStateSpec == null) {
+                bufferMusicStateSpec = new MusicStateSpec();
+            }
+            Context context = getContext();
+            MediaSessionManager mediaSessionManager =
+                    (MediaSessionManager) context.getSystemService(Context.MEDIA_SESSION_SERVICE);
+            try {
+                List<MediaController> controllers = mediaSessionManager.getActiveSessions(
+                        new ComponentName(context, NotificationListener.class));
+                try {
+                    MediaController c = controllers.get(0);
+                    PlaybackState s = c.getPlaybackState();
+                    bufferMusicStateSpec.position = (int) (s.getPosition() / 1000);
+                    bufferMusicStateSpec.playRate = Math.round(100 * s.getPlaybackSpeed());
+                    switch (s.getState()) {
+                        case PlaybackState.STATE_PLAYING:
+                            bufferMusicStateSpec.state = MusicStateSpec.STATE_PLAYING;
+                            break;
+                        case PlaybackState.STATE_STOPPED:
+                            bufferMusicStateSpec.state = MusicStateSpec.STATE_STOPPED;
+                            break;
+                        case PlaybackState.STATE_PAUSED:
+                            bufferMusicStateSpec.state = MusicStateSpec.STATE_PAUSED;
+                            break;
+                        default:
+                            bufferMusicStateSpec.state = MusicStateSpec.STATE_UNKNOWN;
+                            break;
+                    }
+
+                    MediaMetadata d = c.getMetadata();
+                    if (d == null)
+                        return;
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_ARTIST))
+                        bufferMusicSpec.artist = d.getString(MediaMetadata.METADATA_KEY_ARTIST);
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_ALBUM))
+                        bufferMusicSpec.album = d.getString(MediaMetadata.METADATA_KEY_ALBUM);
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_TITLE))
+                        bufferMusicSpec.track = d.getString(MediaMetadata.METADATA_KEY_TITLE);
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_DURATION))
+                        bufferMusicSpec.duration = (int) d.getLong(MediaMetadata.METADATA_KEY_DURATION) / 1000;
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_NUM_TRACKS))
+                        bufferMusicSpec.trackCount = (int) d.getLong(MediaMetadata.METADATA_KEY_NUM_TRACKS);
+                    if (d.containsKey(MediaMetadata.METADATA_KEY_TRACK_NUMBER))
+                        bufferMusicSpec.trackNr = (int) d.getLong(MediaMetadata.METADATA_KEY_TRACK_NUMBER);
+
+                } catch (IndexOutOfBoundsException e) {
+                    LOG.error("No media controller available", e);
+                }
+            } catch (SecurityException e) {
+                LOG.warn("No permission to get media sessions - did not grant notification access?", e);
+            }
+        }
+    }
 
     private void sendMusicStateToDevice() {
         sendMusicStateToDevice(bufferMusicSpec, bufferMusicStateSpec);
@@ -1300,6 +1364,7 @@ public class HuamiSupport extends AbstractBTLEDeviceSupport {
                     case (byte) 224:
                         LOG.info("Music app started");
                         isMusicAppStarted = true;
+                        getMusicInfo();
                         sendMusicStateToDevice();
                         break;
                     case (byte) 225:
